@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
 from app.api.analyze import router as analyze_router
+from app.core.env import load_environment
+
+load_environment()
 
 app = FastAPI(title="Lawgic MVP API", version="0.1.0")
 
