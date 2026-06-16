@@ -1,6 +1,6 @@
 # Lawgic MVP
 
-계약서 텍스트를 입력하면 관련 근로계약 검토 기준을 RAG로 검색하고, LLM이 위험 조항과 수정 방향을 구조화해서 보여주는 FastAPI + Streamlit 기반 MVP입니다.
+계약서 텍스트를 입력하면 계약서 유형별 검토 기준을 RAG로 검색하고, LLM이 위험 조항과 수정 방향을 구조화해서 보여주는 FastAPI + Streamlit 기반 MVP입니다.
 
 본 결과는 법률 자문이 아닌 계약서 검토 보조 결과입니다. 최종 판단은 전문가 검토가 필요합니다.
 
@@ -8,10 +8,11 @@
 
 1. 사용자가 계약서 문장을 입력합니다.
 2. FastAPI의 `/api/analyze`가 계약서 문장을 분석합니다.
-3. ChromaDB 기반 RAG가 `app/data/labor_law_contexts.json`에서 관련 근거를 검색합니다.
-4. OpenAI LLM이 위험 조항, 위험도, 판단 사유, 근거, 권고 수정 방향을 생성합니다.
-5. Streamlit UI가 분석 결과와 검색된 RAG 근거를 표시합니다.
-6. OpenAI 호출이 실패하거나 API 키가 없으면 `local-fallback` 규칙으로 같은 응답 형식을 유지합니다.
+3. 계약서 유형을 판별하거나 사용자가 선택한 유형을 사용합니다.
+4. ChromaDB 기반 RAG가 유형별 근거 파일에서 관련 근거를 검색합니다.
+5. OpenAI LLM이 위험 조항, 위험도, 판단 사유, 근거, 권고 수정 방향을 생성합니다.
+6. Streamlit UI가 분석 결과와 검색된 RAG 근거를 표시합니다.
+7. OpenAI 호출이 실패하거나 API 키가 없으면 `local-fallback` 규칙으로 같은 응답 형식을 유지합니다.
 
 데모용 입력 예시:
 
@@ -34,6 +35,7 @@ app/
     env.py
   data/
     labor_law_contexts.json
+    lease_law_contexts.json
     raw/
     generated/
     eval/
@@ -117,6 +119,7 @@ http://localhost:8501
 
 - FastAPI 분석 API
 - Streamlit 데모 UI
+- 계약서 유형 자동 판별 및 유형별 RAG 검색
 - ChromaDB 기반 RAG 검색
 - OpenAI embedding 우선 사용, 실패 시 로컬 fallback embedding 사용
 - OpenAI LLM 기반 위험 조항 구조화
@@ -126,7 +129,10 @@ http://localhost:8501
 
 ## RAG 데이터
 
-현재 데모 앱은 검수된 RAG 데이터인 `app/data/labor_law_contexts.json`을 사용합니다.
+현재 데모 앱은 계약서 유형에 따라 아래 검수된 RAG 데이터를 사용합니다.
+
+- 근로계약서: `app/data/labor_law_contexts.json`
+- 주택임대차계약서: `app/data/lease_law_contexts.json`
 
 RAG 검색 대상은 각 항목의 `title`, `content`, `keywords`입니다.
 
@@ -144,21 +150,31 @@ RAG 검색 대상은 각 항목의 `title`, `content`, `keywords`입니다.
 공식 법령 원문을 수집한 뒤 LLM으로 계약서 검토용 RAG JSON을 생성할 수 있습니다.
 
 ```bash
-python scripts/collect_law_sources.py
-python scripts/generate_rag_contexts.py
+python scripts/collect_law_sources.py --domain employment
+python scripts/generate_rag_contexts.py --domain employment
 python scripts/validate_rag_contexts.py
+```
+
+주택임대차계약서용 근거를 다시 생성하려면:
+
+```bash
+python scripts/collect_law_sources.py --domain lease --output app/data/raw/lease_law_sources.json
+python scripts/generate_rag_contexts.py --domain lease --input app/data/raw/lease_law_sources.json
+python scripts/validate_rag_contexts.py --input app/data/generated/lease_law_contexts.generated.json
 ```
 
 생성 결과는 기본적으로 아래 파일에 저장됩니다.
 
 ```text
 app/data/generated/labor_law_contexts.generated.json
+app/data/generated/lease_law_contexts.generated.json
 ```
 
 검수 후 실제 RAG 데이터로 반영하려면:
 
 ```bash
-python scripts/generate_rag_contexts.py --apply
+python scripts/generate_rag_contexts.py --domain employment --apply
+python scripts/generate_rag_contexts.py --domain lease --apply
 ```
 
 중간 데모에서는 자동 생성 결과를 바로 적용하지 않고, 검수된 JSON을 사용하는 방식을 권장합니다.
@@ -169,6 +185,7 @@ python scripts/generate_rag_contexts.py --apply
 
 ```bash
 python scripts/evaluate_rag.py --top-k 3 --show
+python scripts/evaluate_rag.py --domain lease --cases app/data/eval/lease_rag_eval_cases.json --top-k 3 --show
 ```
 
 이 평가는 RAG 데이터와 검색 로직을 개선하기 위한 내부 지표입니다.
@@ -183,6 +200,7 @@ python scripts/evaluate_rag.py --top-k 3 --show
 ## 향후 개선 방향
 
 - 조항별 RAG 검색으로 전환
+- 계약서 유형 분류를 LLM 기반 또는 명시 선택 기반으로 고도화
 - 공식 법령 원문을 조문 단위로 추출하는 `extract_law_articles.py` 추가
 - RAG 데이터 생성 후 자동 필터링과 사람 검수 흐름 강화
 - 평가셋 확장 및 Top-1/Top-3 검색 정확도 개선

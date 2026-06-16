@@ -44,6 +44,12 @@ def _load_cases(path: Path) -> list[dict[str, Any]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate RAG retrieval quality.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
+    parser.add_argument(
+        "--domain",
+        choices=["employment", "lease"],
+        default="employment",
+        help="RAG context domain to evaluate.",
+    )
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--show", action="store_true", help="Print retrieved contexts for each case.")
     args = parser.parse_args()
@@ -62,7 +68,7 @@ def main() -> None:
         if not isinstance(query, str) or not query.strip():
             raise SystemExit(f"Case {index} has empty input.")
 
-        results = retrieve_related_context(query, top_k=args.top_k)
+        results = retrieve_related_context(query, contract_type=args.domain, top_k=args.top_k)
         matches = [_matches_expected(result, case) for result in results]
         top1_hit = bool(matches[:1] and matches[0])
         topk_hit = any(matches)

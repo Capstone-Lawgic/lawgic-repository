@@ -1,8 +1,14 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.contract_domain import ContractDomain
+
 
 class ContractAnalyzeRequest(BaseModel):
     text: str = Field(..., description="분석할 계약서 전체 텍스트")
+    contract_type: ContractDomain | None = Field(
+        default=None,
+        description="계약서 유형. 비워두면 텍스트에서 자동 판별합니다.",
+    )
 
 
 class RetrievedContext(BaseModel):
@@ -25,6 +31,7 @@ class RiskClause(BaseModel):
 class AnalyzeResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
+    contract_type: ContractDomain
     total_sentences: int
     risk_count: int
     risk_clauses: list[RiskClause]

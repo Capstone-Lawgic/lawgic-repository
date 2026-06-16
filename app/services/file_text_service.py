@@ -54,7 +54,10 @@ def _extract_text_from_pdf(content: bytes) -> str:
     try:
         reader = PdfReader(io.BytesIO(content))
         page_texts = [page.extract_text() or "" for page in reader.pages]
+    except HTTPException:
+        raise
     except Exception as exc:
+        logger.exception("PDF text extraction failed")
         raise HTTPException(status_code=400, detail="PDF 텍스트를 읽지 못했습니다.") from exc
 
     text = "\n\n".join(page_text.strip() for page_text in page_texts if page_text.strip())
@@ -86,7 +89,7 @@ def _extract_text_from_image(content: bytes, content_type: str) -> str:
     except ImportError as exc:
         raise HTTPException(status_code=500, detail="openai 패키지를 설치해야 합니다.") from exc
 
-    media_type = content_type or "image/png"
+    media_type = content_type if content_type in IMAGE_CONTENT_TYPES else "image/png"
     image_url = f"data:{media_type};base64,{base64.b64encode(content).decode('ascii')}"
     start = time.perf_counter()
 
@@ -113,7 +116,10 @@ def _extract_text_from_image(content: bytes, content_type: str) -> str:
                 }
             ],
         )
+    except HTTPException:
+        raise
     except Exception as exc:
+        logger.exception("Image text extraction failed")
         raise HTTPException(status_code=502, detail="이미지 텍스트 추출에 실패했습니다.") from exc
 
     text = response.output_text.strip()

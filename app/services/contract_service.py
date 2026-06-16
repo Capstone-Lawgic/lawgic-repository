@@ -2,6 +2,7 @@ import re
 import time
 from logging import getLogger
 
+from app.core.contract_domain import ContractDomain, detect_contract_domain
 from app.schemas.contract import AnalyzeResponse
 from app.services.llm_service import analyze_with_llm
 from app.services.rag_service import retrieve_related_context
@@ -14,8 +15,12 @@ def split_sentences(text: str) -> list[str]:
     return [sentence.strip() for sentence in raw_sentences if sentence.strip()]
 
 
-def analyze_contract_text(text: str) -> AnalyzeResponse:
+def analyze_contract_text(
+    text: str,
+    contract_type: ContractDomain | None = None,
+) -> AnalyzeResponse:
     total_start = time.perf_counter()
+    detected_contract_type = contract_type or detect_contract_domain(text)
 
     step_start = time.perf_counter()
     sentences = split_sentences(text)
@@ -27,10 +32,11 @@ def analyze_contract_text(text: str) -> AnalyzeResponse:
     )
 
     step_start = time.perf_counter()
-    contexts = retrieve_related_context(text)
+    contexts = retrieve_related_context(text, contract_type=detected_contract_type)
     logger.info(
-        "analysis timing: retrieve_related_context=%.3fs context_count=%s",
+        "analysis timing: retrieve_related_context=%.3fs contract_type=%s context_count=%s",
         time.perf_counter() - step_start,
+        detected_contract_type,
         len(contexts),
     )
 
@@ -39,6 +45,7 @@ def analyze_contract_text(text: str) -> AnalyzeResponse:
         contract_text=text,
         sentences=sentences,
         contexts=contexts,
+        contract_type=detected_contract_type,
     )
     logger.info(
         "analysis timing: analyze_with_llm=%.3fs model=%s risk_count=%s",
@@ -49,6 +56,7 @@ def analyze_contract_text(text: str) -> AnalyzeResponse:
     logger.info("analysis timing: total=%.3fs", time.perf_counter() - total_start)
 
     return AnalyzeResponse(
+        contract_type=detected_contract_type,
         total_sentences=len(sentences),
         risk_count=len(risk_clauses),
         risk_clauses=risk_clauses,

@@ -12,15 +12,22 @@ from typing import Any
 import chromadb
 from chromadb.errors import NotFoundError
 
+from app.core.contract_domain import ContractDomain
 from app.core.env import load_environment
 from app.schemas.contract import RetrievedContext
 
 load_environment()
 
 APP_DIR = Path(__file__).resolve().parents[1]
-DATA_PATH = APP_DIR / "data" / "labor_law_contexts.json"
+DATA_PATHS: dict[ContractDomain, Path] = {
+    "employment": APP_DIR / "data" / "labor_law_contexts.json",
+    "lease": APP_DIR / "data" / "lease_law_contexts.json",
+}
 CHROMA_PATH = APP_DIR / "data" / "chroma"
-COLLECTION_NAME = "labor_law_contexts"
+COLLECTION_NAMES: dict[ContractDomain, str] = {
+    "employment": "labor_law_contexts",
+    "lease": "lease_law_contexts",
+}
 EMBEDDING_DIM = 384
 EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 logger = getLogger("uvicorn.error")
@@ -106,8 +113,8 @@ def _embed_texts(texts: list[str]) -> list[list[float]]:
 
 
 @lru_cache
-def _load_contexts() -> list[dict[str, Any]]:
-    with DATA_PATH.open(encoding="utf-8") as file:
+def _load_contexts(contract_type: ContractDomain) -> list[dict[str, Any]]:
+    with DATA_PATHS[contract_type].open(encoding="utf-8") as file:
         return json.load(file)
 
 
@@ -121,9 +128,13 @@ def _contexts_hash(contexts: list[dict[str, Any]]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _collection_metadata(contexts: list[dict[str, Any]]) -> dict[str, str | int]:
+def _collection_metadata(
+    contract_type: ContractDomain,
+    contexts: list[dict[str, Any]],
+) -> dict[str, str | int]:
     return {
         "hnsw:space": "cosine",
+        "contract_type": contract_type,
         "embedding_provider": _embedding_provider(),
         "embedding_model": EMBEDDING_MODEL if os.getenv("OPENAI_API_KEY") else "local-hash",
         "context_count": len(contexts),
@@ -131,11 +142,16 @@ def _collection_metadata(contexts: list[dict[str, Any]]) -> dict[str, str | int]
     }
 
 
-def _collection_is_current(collection: Any, contexts: list[dict[str, Any]]) -> bool:
+def _collection_is_current(
+    collection: Any,
+    contract_type: ContractDomain,
+    contexts: list[dict[str, Any]],
+) -> bool:
     metadata = collection.metadata or {}
-    expected = _collection_metadata(contexts)
+    expected = _collection_metadata(contract_type, contexts)
     return (
         collection.count() == len(contexts)
+        and metadata.get("contract_type") == expected["contract_type"]
         and metadata.get("embedding_provider") == expected["embedding_provider"]
         and metadata.get("embedding_model") == expected["embedding_model"]
         and metadata.get("context_count") == expected["context_count"]
@@ -160,41 +176,55 @@ def _keyword_score(query: str, metadata: dict[str, Any]) -> float:
     if not query_tokens:
         return 0.0
 
-    return len(query_tokens & document_tokens) / len(query_tokens)
+    matched = 0
+    for query_token in query_tokens:
+        if query_token in document_tokens:
+            matched += 1
+            continue
+        if len(query_token) >= 3 and any(
+            query_token in document_token or document_token in query_token
+            for document_token in document_tokens
+            if len(document_token) >= 3
+        ):
+            matched += 1
+
+    return matched / len(query_tokens)
 
 
 @lru_cache
-def _get_collection():
+def _get_collection(contract_type: ContractDomain):
     start = time.perf_counter()
     client = chromadb.PersistentClient(path=str(CHROMA_PATH))
     logger.info("analysis timing: chroma_client=%.3fs", time.perf_counter() - start)
 
     start = time.perf_counter()
-    contexts = _load_contexts()
+    contexts = _load_contexts(contract_type)
     logger.info(
-        "analysis timing: load_contexts=%.3fs context_count=%s",
+        "analysis timing: load_contexts=%.3fs contract_type=%s context_count=%s",
         time.perf_counter() - start,
+        contract_type,
         len(contexts),
     )
 
+    collection_name = COLLECTION_NAMES[contract_type]
     try:
         start = time.perf_counter()
-        collection = client.get_collection(COLLECTION_NAME)
+        collection = client.get_collection(collection_name)
         logger.info("analysis timing: chroma_get_collection=%.3fs", time.perf_counter() - start)
-        if _collection_is_current(collection, contexts):
+        if _collection_is_current(collection, contract_type, contexts):
             logger.info("analysis timing: chroma_reuse_collection=True")
             return collection
 
         start = time.perf_counter()
-        client.delete_collection(COLLECTION_NAME)
+        client.delete_collection(collection_name)
         logger.info("analysis timing: chroma_delete_collection=%.3fs", time.perf_counter() - start)
     except (NotFoundError, ValueError):
         pass
 
     start = time.perf_counter()
     collection = client.create_collection(
-        name=COLLECTION_NAME,
-        metadata=_collection_metadata(contexts),
+        name=collection_name,
+        metadata=_collection_metadata(contract_type, contexts),
     )
     logger.info("analysis timing: chroma_create_collection=%.3fs", time.perf_counter() - start)
 
@@ -234,13 +264,17 @@ def _distance_to_score(distance: float | None) -> float:
     return round(max(0.0, 1.0 - distance), 4)
 
 
-def retrieve_related_context(contract_text: str, top_k: int = 4) -> list[RetrievedContext]:
+def retrieve_related_context(
+    contract_text: str,
+    contract_type: ContractDomain = "employment",
+    top_k: int = 4,
+) -> list[RetrievedContext]:
     """Retrieve legal review contexts from a local ChromaDB vector collection."""
     if not contract_text.strip() or top_k <= 0:
         return []
 
     start = time.perf_counter()
-    collection = _get_collection()
+    collection = _get_collection(contract_type)
     logger.info("analysis timing: get_collection=%.3fs", time.perf_counter() - start)
 
     start = time.perf_counter()

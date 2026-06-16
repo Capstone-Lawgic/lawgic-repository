@@ -1,0 +1,22 @@
+[
+  {
+    "input": "임차인은 임대인의 동의 없이 전입신고나 확정일자를 받을 수 없다.",
+    "expected_source_contains": "주택임대차보호법 제3조",
+    "expected_title_contains": "전입신고"
+  },
+  {
+    "input": "임차인은 계약갱신 요구권을 행사하지 않기로 한다.",
+    "expected_source_contains": "주택임대차보호법 제6조의3",
+    "expected_title_contains": "계약갱신"
+  },
+  {
+    "input": "누수와 보일러 고장 등 모든 수리비는 임차인이 부담한다.",
+    "expected_source_contains": "민법 제623조",
+    "expected_title_contains": "사용수익"
+  },
+  {
+    "input": "임대인은 계약기간 중에도 월세와 보증금을 언제든지 인상할 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제7조",
+    "expected_title_contains": "차임"
+  }
+]

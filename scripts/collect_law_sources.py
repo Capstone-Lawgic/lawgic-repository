@@ -18,6 +18,13 @@ DEFAULT_LAWS = [
     "개인정보 보호법",
     "부정경쟁방지 및 영업비밀보호에 관한 법률",
 ]
+PRESET_LAWS = {
+    "employment": DEFAULT_LAWS,
+    "lease": [
+        "주택임대차보호법",
+        "민법",
+    ],
+}
 
 
 def _request_json(url: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -101,6 +108,12 @@ def main() -> None:
         dest="laws",
         help="Law name to collect. Can be passed multiple times.",
     )
+    parser.add_argument(
+        "--domain",
+        choices=sorted(PRESET_LAWS),
+        default="employment",
+        help="Preset law bundle to collect when --law is not provided.",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
@@ -109,7 +122,7 @@ def main() -> None:
     if not oc:
         raise SystemExit("Set LAW_API_OC in .env before collecting law.go.kr data.")
 
-    laws = args.laws or DEFAULT_LAWS
+    laws = args.laws or PRESET_LAWS[args.domain]
     records = [_collect_law(oc, law_name) for law_name in laws]
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

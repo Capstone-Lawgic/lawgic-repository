@@ -11,10 +11,57 @@ from pydantic import BaseModel, Field
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = ROOT_DIR / "app" / "data" / "raw" / "law_sources.json"
-DEFAULT_OUTPUT = ROOT_DIR / "app" / "data" / "generated" / "labor_law_contexts.generated.json"
-APP_CONTEXTS = ROOT_DIR / "app" / "data" / "labor_law_contexts.json"
 DEFAULT_MODEL = "gpt-5.4-mini"
 MAX_SOURCE_CHARS = 18000
+DOMAIN_CONFIG = {
+    "employment": {
+        "label": "근로계약서",
+        "default_output": ROOT_DIR / "app" / "data" / "generated" / "labor_law_contexts.generated.json",
+        "app_contexts": ROOT_DIR / "app" / "data" / "labor_law_contexts.json",
+        "target": "근로계약서, 프리랜서 계약서, 입사/퇴사 관련 약정",
+        "risk_types": [
+            "위약금/손해배상 예정: 퇴사, 계약해지, 교육비 반환, 정액 배상",
+            "임금/최저임금: 기본급, 수당, 공제, 수습, 포괄임금",
+            "근로시간: 연장근로, 야간근로, 휴일근로, 휴게시간, 가산수당",
+            "해고/계약해지: 즉시 해고, 일방적 종료, 정당한 이유, 징계",
+            "개인정보: 개인정보 수집, 이용, 보유기간, 제3자 제공, 동의",
+            "비밀유지/경업금지: 영업비밀, 동종업계 취업 제한, 퇴직 후 제한, 보상",
+            "근로조건 변경: 근무장소, 직무, 전보, 배치전환, 일방적 변경",
+        ],
+        "include_terms": [
+            "위약금", "위약", "손해배상", "배상", "퇴사", "계약해지", "계약 해지",
+            "교육비", "임금", "최저임금", "기본급", "수당", "공제", "수습",
+            "포괄임금", "근로시간", "연장근로", "야간근로", "휴일근로", "휴게시간",
+            "가산수당", "해고", "즉시 해고", "정당한 이유", "징계", "개인정보",
+            "수집", "이용", "보유기간", "보유 기간", "제3자 제공", "동의",
+            "비밀유지", "비밀 유지", "영업비밀", "경업금지", "동종업계", "퇴직 후",
+            "보상", "근무장소", "근무 장소", "직무", "전보", "배치전환", "일방적 변경",
+            "근로조건",
+        ],
+    },
+    "lease": {
+        "label": "주택임대차계약서",
+        "default_output": ROOT_DIR / "app" / "data" / "generated" / "lease_law_contexts.generated.json",
+        "app_contexts": ROOT_DIR / "app" / "data" / "lease_law_contexts.json",
+        "target": "주택임대차계약서, 전세계약서, 월세계약서, 임대차 특약",
+        "risk_types": [
+            "대항력/우선변제: 전입신고, 확정일자, 보증금 보호, 우선변제",
+            "계약갱신/기간: 계약기간, 묵시적 갱신, 계약갱신 요구권, 갱신 거절",
+            "보증금 반환: 반환 시점, 공제, 보증금 몰수, 명도와 동시이행",
+            "차임/관리비: 월세, 차임 증액, 관리비 항목, 일방적 인상",
+            "수선의무: 하자, 누수, 보일러, 긴급수리, 필요비, 유익비",
+            "원상회복: 통상 손모, 시설물 파손, 퇴거 정산, 과도한 복구 의무",
+            "해지/퇴거: 중도해지, 즉시 퇴거, 일방적 해지, 전대 제한",
+        ],
+        "include_terms": [
+            "임대차", "임대인", "임차인", "보증금", "전세금", "월세", "차임",
+            "관리비", "전입신고", "주민등록", "확정일자", "대항력", "우선변제",
+            "계약갱신", "갱신청구권", "묵시적 갱신", "갱신 거절", "계약기간",
+            "퇴거", "명도", "중도해지", "해지", "원상회복", "수선", "수리",
+            "하자", "누수", "보일러", "필요비", "유익비", "전대", "임차권 양도",
+        ],
+    },
+}
 EXCLUDE_TERMS = [
     "명단공개",
     "명단 공개",
@@ -51,54 +98,6 @@ EXCLUDE_TERMS = [
     "출산전후휴가",
     "임신기",
     "신용회복",
-]
-INCLUDE_TERMS = [
-    "위약금",
-    "위약",
-    "손해배상",
-    "배상",
-    "퇴사",
-    "계약해지",
-    "계약 해지",
-    "교육비",
-    "임금",
-    "최저임금",
-    "기본급",
-    "수당",
-    "공제",
-    "수습",
-    "포괄임금",
-    "근로시간",
-    "연장근로",
-    "야간근로",
-    "휴일근로",
-    "휴게시간",
-    "가산수당",
-    "해고",
-    "즉시 해고",
-    "정당한 이유",
-    "징계",
-    "개인정보",
-    "수집",
-    "이용",
-    "보유기간",
-    "보유 기간",
-    "제3자 제공",
-    "동의",
-    "비밀유지",
-    "비밀 유지",
-    "영업비밀",
-    "경업금지",
-    "동종업계",
-    "퇴직 후",
-    "보상",
-    "근무장소",
-    "근무 장소",
-    "직무",
-    "전보",
-    "배치전환",
-    "일방적 변경",
-    "근로조건",
 ]
 
 
@@ -142,15 +141,18 @@ def _generate_contexts_for_source(
     client: OpenAI,
     model: str,
     record: dict[str, Any],
+    domain: str,
 ) -> list[dict[str, Any]]:
+    config = DOMAIN_CONFIG[domain]
     source_text = _source_to_text(record)
+    risk_type_text = "\n".join(f"- {item}" for item in config["risk_types"])
     response = client.responses.parse(
         model=model,
         input=[
             {
                 "role": "system",
                 "content": (
-                    "너는 한국 근로계약서 RAG 데이터 구축 보조자다. "
+                    f"너는 한국 {config['label']} RAG 데이터 구축 보조자다. "
                     "제공된 공식 원문 안에 있는 내용만 근거로 사용한다. "
                     "원문에 없는 법령명, 조문번호, 판례, 법적 결론을 만들지 않는다. "
                     "계약서 조항의 위험 여부를 판단하는 데 직접 도움이 되는 근거만 선별한다. "
@@ -162,16 +164,10 @@ def _generate_contexts_for_source(
                 "role": "user",
                 "content": (
                     "다음 공식 원문 payload를 계약서 검토용 RAG JSON으로 변환하라.\n"
-                    "목표는 근로계약서, 프리랜서 계약서, 입사/퇴사 관련 약정에서 "
+                    f"목표는 {config['target']}에서 "
                     "위험 조항을 찾을 때 검색될 근거 데이터를 만드는 것이다.\n\n"
                     "우선 포함할 위험 유형:\n"
-                    "- 위약금/손해배상 예정: 퇴사, 계약해지, 교육비 반환, 정액 배상\n"
-                    "- 임금/최저임금: 기본급, 수당, 공제, 수습, 포괄임금\n"
-                    "- 근로시간: 연장근로, 야간근로, 휴일근로, 휴게시간, 가산수당\n"
-                    "- 해고/계약해지: 즉시 해고, 일방적 종료, 정당한 이유, 징계\n"
-                    "- 개인정보: 개인정보 수집, 이용, 보유기간, 제3자 제공, 동의\n"
-                    "- 비밀유지/경업금지: 영업비밀, 동종업계 취업 제한, 퇴직 후 제한, 보상\n"
-                    "- 근로조건 변경: 근무장소, 직무, 전보, 배치전환, 일방적 변경\n\n"
+                    f"{risk_type_text}\n\n"
                     "제외할 항목:\n"
                     "- 벌칙, 과태료, 양벌규정, 미수, 예비ㆍ음모\n"
                     "- 행정기관의 조사, 자료제공 요청, 업무위탁, 지원 제한, 명단공개\n"
@@ -227,23 +223,29 @@ def _context_search_text(context: dict[str, Any]) -> str:
     )
 
 
-def _is_contract_relevant(context: dict[str, Any]) -> bool:
+def _is_contract_relevant(context: dict[str, Any], domain: str) -> bool:
     text = _context_search_text(context)
     if any(term in text for term in EXCLUDE_TERMS):
         return False
-    return any(term in text for term in INCLUDE_TERMS)
+    return any(term in text for term in DOMAIN_CONFIG[domain]["include_terms"])
 
 
-def _filter_contexts(contexts: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [context for context in contexts if _is_contract_relevant(context)]
+def _filter_contexts(contexts: list[dict[str, Any]], domain: str) -> list[dict[str, Any]]:
+    return [context for context in contexts if _is_contract_relevant(context, domain)]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate labor-law RAG contexts from collected source payloads."
+        description="Generate domain-specific RAG contexts from collected source payloads."
+    )
+    parser.add_argument(
+        "--domain",
+        choices=sorted(DOMAIN_CONFIG),
+        default="employment",
+        help="Contract domain to generate contexts for.",
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--output", type=Path, default=None)
     parser.add_argument(
         "--model",
         default=None,
@@ -252,9 +254,10 @@ def main() -> None:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Also replace app/data/labor_law_contexts.json after generation.",
+        help="Also replace the app RAG context file for the selected domain after generation.",
     )
     args = parser.parse_args()
+    output_path = args.output or DOMAIN_CONFIG[args.domain]["default_output"]
 
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY"):
@@ -270,25 +273,25 @@ def main() -> None:
     client = OpenAI()
     contexts: list[dict[str, Any]] = []
     for record in records:
-        contexts.extend(_generate_contexts_for_source(client, model, record))
+        contexts.extend(_generate_contexts_for_source(client, model, record, args.domain))
 
     generated_count = len(contexts)
-    contexts = _filter_contexts(_dedupe_contexts(contexts))
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
+    contexts = _filter_contexts(_dedupe_contexts(contexts), args.domain)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
         json.dumps(contexts, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
     if args.apply:
-        shutil.copyfile(args.output, APP_CONTEXTS)
+        shutil.copyfile(output_path, DOMAIN_CONFIG[args.domain]["app_contexts"])
 
     print(
-        f"Wrote {len(contexts)} generated contexts to {args.output} "
+        f"Wrote {len(contexts)} generated contexts to {output_path} "
         f"({generated_count - len(contexts)} filtered out)"
     )
     if args.apply:
-        print(f"Updated {APP_CONTEXTS}")
+        print(f"Updated {DOMAIN_CONFIG[args.domain]['app_contexts']}")
 
 
 if __name__ == "__main__":

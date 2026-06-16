@@ -9,7 +9,8 @@ st.title("⚖️ Lawgic RAG/LLM")
 st.caption("계약서 텍스트, PDF, 이미지 파일을 분석해 위험 조항과 수정 방향을 정리합니다.")
 st.warning("본 결과는 법률 자문이 아닌 계약서 검토 보조 결과입니다. 최종 판단은 전문가 검토가 필요합니다.")
 
-sample_text = """아르바이트 근로계약서
+SAMPLES = {
+    "employment": """아르바이트 근로계약서
 
 주식회사 테스트컴퍼니(이하 “회사”)와 근로자 김테스트(이하 “근로자”)는 다음과 같이 근로계약을 체결한다.
 
@@ -73,13 +74,59 @@ sample_text = """아르바이트 근로계약서
 성명: 김테스트
 주소: 강원도 춘천시 예시로 45
 서명: __________________
-"""
+""",
+    "lease": """주택 월세 임대차계약서
+
+임대인 홍길동(이하 “임대인”)과 임차인 김테스트(이하 “임차인”)는 서울특별시 테스트구 예시로 100, 101호에 관하여 다음과 같이 임대차계약을 체결한다.
+
+제1조 보증금 및 차임
+보증금은 10,000,000원, 월 차임은 700,000원으로 한다. 임대인은 주변 시세나 개인 사정에 따라 계약기간 중에도 월세와 관리비를 조정할 수 있으며, 임차인은 이에 이의를 제기하지 않는다.
+
+제2조 계약기간
+계약기간은 2026년 7월 1일부터 2027년 6월 30일까지 1년으로 한다. 기간 만료 시 임대인이 별도로 통보하지 않아도 계약은 자동 종료되며 임차인은 즉시 퇴거해야 한다.
+
+제3조 전입신고 및 확정일자
+임차인은 임대인의 사전 서면 동의 없이 전입신고나 확정일자를 받을 수 없다. 이를 위반하는 경우 임대인은 계약을 즉시 해지할 수 있다.
+
+제4조 수선 및 관리
+누수, 보일러 고장, 배관 문제, 전기 설비 고장 등 주택 사용 중 발생하는 모든 수리비는 원인과 관계없이 임차인이 부담한다.
+
+제5조 원상회복
+임차인은 퇴거 시 통상적인 사용으로 생긴 마모나 노후화까지 포함하여 모든 시설을 신품 상태로 원상회복해야 하며, 임대인은 필요한 비용을 보증금에서 임의로 공제할 수 있다.
+
+제6조 중도해지
+임차인이 계약기간 중 중도해지를 원하는 경우 남은 계약기간의 월세 전액을 위약금으로 지급해야 하며, 보증금 반환은 새 임차인이 입주한 이후로 한다.
+
+제7조 계약갱신
+임차인은 본 계약 체결과 동시에 계약갱신 요구권을 행사하지 않기로 확약한다. 임대인은 필요하다고 판단하는 경우 갱신을 거절할 수 있다.
+
+2026년 6월 16일
+
+임대인: 홍길동
+임차인: 김테스트
+""",
+}
+
+CONTRACT_TYPE_OPTIONS = {
+    "employment": "근로계약서",
+    "lease": "주택임대차계약서",
+}
 
 uploaded_file = st.file_uploader(
     "PDF 또는 이미지 파일 업로드",
     type=["pdf", "jpg", "jpeg", "png", "webp"],
 )
-text = st.text_area("계약서 텍스트 입력", value=sample_text, height=240)
+contract_type = st.selectbox(
+    "계약서 유형",
+    options=list(CONTRACT_TYPE_OPTIONS),
+    format_func=lambda value: CONTRACT_TYPE_OPTIONS[value],
+)
+text = st.text_area(
+    "계약서 텍스트 입력",
+    value=SAMPLES[contract_type],
+    height=240,
+    key=f"contract_text_{contract_type}",
+)
 
 if st.button("분석 실행", type="primary", use_container_width=True):
     if uploaded_file is None and not text.strip():
@@ -95,11 +142,26 @@ if st.button("분석 실행", type="primary", use_container_width=True):
                             uploaded_file.type,
                         )
                     }
-                    response = requests.post(API_FILE_URL, files=files, timeout=120)
+                    response = requests.post(
+                        API_FILE_URL,
+                        data={"contract_type": contract_type},
+                        files=files,
+                        timeout=120,
+                    )
                 else:
-                    response = requests.post(API_URL, json={"text": text}, timeout=60)
+                    response = requests.post(
+                        API_URL,
+                        json={"text": text, "contract_type": contract_type},
+                        timeout=60,
+                    )
 
-                response.raise_for_status()
+                if not response.ok:
+                    try:
+                        detail = response.json().get("detail", response.text)
+                    except ValueError:
+                        detail = response.text
+                    raise requests.HTTPError(detail, response=response)
+
                 result = response.json()
             except requests.RequestException as exc:
                 st.error(f"API 호출 실패: {exc}")
@@ -110,6 +172,7 @@ if st.button("분석 실행", type="primary", use_container_width=True):
                 col1.metric("총 문장 수", result["total_sentences"])
                 col2.metric("위험 조항 수", result["risk_count"])
                 col3.metric("분석 모델", result["model_used"])
+                st.caption(f"계약서 유형: {CONTRACT_TYPE_OPTIONS.get(result['contract_type'], result['contract_type'])}")
 
                 if result["model_used"] == "local-fallback":
                     st.warning("OpenAI 분석을 사용할 수 없어 로컬 fallback 규칙으로 결과를 생성했습니다.")
