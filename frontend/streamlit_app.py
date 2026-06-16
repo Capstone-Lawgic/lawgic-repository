@@ -2,14 +2,14 @@ import requests
 import streamlit as st
 
 API_URL = "http://localhost:8000/api/analyze"
+API_FILE_URL = "http://localhost:8000/api/analyze-file"
 
 st.set_page_config(page_title="Lawgic MVP", page_icon="⚖️", layout="wide")
 st.title("⚖️ Lawgic RAG/LLM")
-st.caption("계약서 텍스트를 입력하면 관련 검토 기준을 검색하고 위험 조항과 수정 방향을 정리합니다.")
+st.caption("계약서 텍스트, PDF, 이미지 파일을 분석해 위험 조항과 수정 방향을 정리합니다.")
 st.warning("본 결과는 법률 자문이 아닌 계약서 검토 보조 결과입니다. 최종 판단은 전문가 검토가 필요합니다.")
 
-sample_text = """\
-아르바이트 근로계약서
+sample_text = """아르바이트 근로계약서
 
 주식회사 테스트컴퍼니(이하 “회사”)와 근로자 김테스트(이하 “근로자”)는 다음과 같이 근로계약을 체결한다.
 
@@ -75,15 +75,30 @@ sample_text = """\
 서명: __________________
 """
 
+uploaded_file = st.file_uploader(
+    "PDF 또는 이미지 파일 업로드",
+    type=["pdf", "jpg", "jpeg", "png", "webp"],
+)
 text = st.text_area("계약서 텍스트 입력", value=sample_text, height=240)
 
 if st.button("분석 실행", type="primary", use_container_width=True):
-    if not text.strip():
-        st.warning("계약서 텍스트를 입력해 주세요.")
+    if uploaded_file is None and not text.strip():
+        st.warning("계약서 텍스트를 입력하거나 파일을 업로드해 주세요.")
     else:
         with st.spinner("RAG 근거 검색 및 위험 조항 분석 중..."):
             try:
-                response = requests.post(API_URL, json={"text": text}, timeout=60)
+                if uploaded_file is not None:
+                    files = {
+                        "file": (
+                            uploaded_file.name,
+                            uploaded_file.getvalue(),
+                            uploaded_file.type,
+                        )
+                    }
+                    response = requests.post(API_FILE_URL, files=files, timeout=120)
+                else:
+                    response = requests.post(API_URL, json={"text": text}, timeout=60)
+
                 response.raise_for_status()
                 result = response.json()
             except requests.RequestException as exc:

@@ -1,4 +1,6 @@
 import os
+import time
+from logging import getLogger
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +10,8 @@ from app.schemas.contract import RetrievedContext, RiskClause
 load_environment()
 
 DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+MAX_RISK_CLAUSES = int(os.getenv("MAX_RISK_CLAUSES", "8"))
+logger = getLogger("uvicorn.error")
 
 
 class LLMRiskClause(BaseModel):
@@ -110,7 +114,15 @@ def analyze_with_llm(
 ) -> tuple[str, list[RiskClause], str]:
     """RAG 근거를 바탕으로 LLM 계약서 위험 분석을 수행한다."""
     if not os.getenv("OPENAI_API_KEY"):
+        start = time.perf_counter()
         result = _fallback_analyze(contract_text, sentences, contexts)
+        result.risk_clauses = result.risk_clauses[:MAX_RISK_CLAUSES]
+        logger.info(
+            "analysis timing: local_fallback_analyze=%.3fs sentence_count=%s context_count=%s",
+            time.perf_counter() - start,
+            len(sentences),
+            len(contexts),
+        )
         return (
             result.summary,
             [_build_risk_clause(clause, contexts) for clause in result.risk_clauses],
@@ -120,10 +132,23 @@ def analyze_with_llm(
     try:
         from openai import OpenAI
 
+        start = time.perf_counter()
         client = OpenAI()
+        limit_prompt = (
+            "속도를 위해 결과를 압축하세요. "
+            f"risk_clauses는 최대 {MAX_RISK_CLAUSES}개만 반환합니다. "
+            "가장 중요한 high 위험을 우선하고, 그 다음 medium 위험을 선택합니다. "
+            "중복되거나 같은 취지의 위험은 하나로 합치고, 낮은 위험은 생략합니다. "
+            "reason과 recommendation은 각각 1~2문장으로 짧게 작성합니다. "
+            "근거 없는 법령명이나 조문은 만들지 않습니다."
+        )
         response = client.responses.parse(
             model=DEFAULT_MODEL,
             input=[
+                {
+                    "role": "system",
+                    "content": limit_prompt,
+                },
                 {
                     "role": "system",
                     "content": (
@@ -148,9 +173,24 @@ def analyze_with_llm(
             ],
             text_format=LLMAnalyzeResult,
         )
+        logger.info(
+            "analysis timing: openai_responses_parse=%.3fs model=%s text_chars=%s context_count=%s",
+            time.perf_counter() - start,
+            DEFAULT_MODEL,
+            len(contract_text),
+            len(contexts),
+        )
         result = response.output_parsed
+        result.risk_clauses = result.risk_clauses[:MAX_RISK_CLAUSES]
     except Exception:
+        logger.exception("OpenAI analysis failed; using local fallback")
+        start = time.perf_counter()
         result = _fallback_analyze(contract_text, sentences, contexts)
+        result.risk_clauses = result.risk_clauses[:MAX_RISK_CLAUSES]
+        logger.info(
+            "analysis timing: local_fallback_after_openai_error=%.3fs",
+            time.perf_counter() - start,
+        )
         return (
             f"{result.summary} OpenAI 분석 중 오류가 발생해 로컬 fallback 결과를 표시합니다.",
             [_build_risk_clause(clause, contexts) for clause in result.risk_clauses],
