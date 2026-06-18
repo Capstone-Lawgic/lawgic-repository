@@ -13,8 +13,8 @@
   },
   {
     "input": "회사는 필요할 때마다 연장근로와 야간근로를 지시할 수 있으며 별도 수당은 지급하지 않는다.",
-    "expected_source_contains": "근로기준법 제50조",
-    "expected_title_contains": "연장근로",
+    "expected_source_contains": "근로기준법 제56조",
+    "expected_title_contains": "수당",
     "expected_keywords": ["연장근로", "야간근로", "수당"]
   },
   {
@@ -31,7 +31,7 @@
   },
   {
     "input": "근로자의 개인정보를 회사가 필요한 범위에서 자유롭게 수집하고 제3자에게 제공할 수 있다.",
-    "expected_source_contains": "개인정보보호법",
+    "expected_source_contains": "개인정보 보호법",
     "expected_title_contains": "개인정보",
     "expected_keywords": ["개인정보", "제3자 제공", "동의"]
   },
@@ -43,8 +43,80 @@
   },
   {
     "input": "회사는 근로자의 동의 없이 근무 장소와 직무를 임의로 변경할 수 있다.",
-    "expected_source_contains": "근로계약 검토 기준",
-    "expected_title_contains": "전보",
+    "expected_source_contains": "근로기준법 제17조",
+    "expected_title_contains": "근로조건",
     "expected_keywords": ["근무 장소", "직무", "전보"]
+  },
+  {
+    "input": "근로자가 중도퇴사하면 회사가 부담한 교육비 전액을 반환해야 한다.",
+    "expected_source_contains": "근로기준법 제20조",
+    "expected_title_contains": "위약",
+    "expected_keywords": ["중도퇴사", "교육비 반환", "손해배상"]
+  },
+  {
+    "input": "근로자의 실수로 손해가 발생하면 회사는 손해액을 급여에서 바로 공제할 수 있다.",
+    "expected_source_contains": "근로기준법 제43조",
+    "expected_title_contains": "임금",
+    "expected_keywords": ["임금 공제", "손해액", "급여에서 공제"]
+  },
+  {
+    "input": "업무상 필요하면 주 52시간을 초과해 계속 근무할 수 있다.",
+    "expected_source_contains": "근로기준법 제53조",
+    "expected_title_contains": "연장근로",
+    "expected_keywords": ["주 52시간", "연장근로", "초과근무"]
+  },
+  {
+    "input": "포괄임금에 야간근로와 휴일근로 수당이 모두 포함되어 추가 수당은 없다.",
+    "expected_source_contains": "근로기준법 제56조",
+    "expected_title_contains": "수당",
+    "expected_keywords": ["포괄임금", "야간근로", "휴일근로"]
+  },
+  {
+    "input": "회사는 업무 능력이 부족하다고 판단하면 별도 절차 없이 계약을 즉시 종료할 수 있다.",
+    "expected_source_contains": "근로기준법 제23조",
+    "expected_title_contains": "해고",
+    "expected_keywords": ["즉시 종료", "계약해지", "정당한 이유"]
+  },
+  {
+    "input": "경영상 사정이 있으면 회사는 근로자를 언제든지 정리해고할 수 있다.",
+    "expected_source_contains": "근로기준법 제24조",
+    "expected_title_contains": "경영상",
+    "expected_keywords": ["정리해고", "경영상 이유", "구조조정"]
+  },
+  {
+    "input": "회사는 필요에 따라 근무지를 다른 지역으로 옮기고 업무내용도 바꿀 수 있다.",
+    "expected_source_contains": "근로기준법 제17조",
+    "expected_title_contains": "근로조건",
+    "expected_keywords": ["근무지 변경", "업무내용", "근로조건 변경"]
+  },
+  {
+    "input": "기본급은 최저임금에 미치지 못해도 각종 수당을 포함하면 문제가 없다.",
+    "expected_source_contains": "최저임금법 제6조",
+    "expected_title_contains": "최저임금",
+    "expected_keywords": ["기본급", "최저임금 미달", "수당"]
+  },
+  {
+    "input": "식비와 교통비, 상여금을 모두 최저임금 산입 근거로 본다.",
+    "expected_source_contains": "최저임금법 제6조",
+    "expected_title_contains": "상여금",
+    "expected_keywords": ["식비", "교통비", "상여금"]
+  },
+  {
+    "input": "회사는 주민등록번호와 영상정보를 목적 제한 없이 장기간 보관할 수 있다.",
+    "expected_source_contains": "개인정보 보호법",
+    "expected_title_contains": "개인정보",
+    "expected_keywords": ["주민등록번호", "영상정보", "목적 제한"]
+  },
+  {
+    "input": "회사가 추천인에게서 받은 개인정보의 수집 출처를 근로자에게 알리지 않아도 된다.",
+    "expected_source_contains": "개인정보 보호법 제20조",
+    "expected_title_contains": "출처",
+    "expected_keywords": ["추천인", "수집 출처", "고지"]
+  },
+  {
+    "input": "근로자는 재직 중 알게 된 영업비밀을 퇴직 후에도 외부에 공개해서는 안 된다.",
+    "expected_source_contains": "부정경쟁방지",
+    "expected_title_contains": "비밀",
+    "expected_keywords": ["영업비밀", "퇴직 후", "공개 금지"]
   }
 ]
