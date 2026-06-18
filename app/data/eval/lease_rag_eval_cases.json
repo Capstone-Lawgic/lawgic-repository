@@ -18,5 +18,90 @@
     "input": "임대인은 계약기간 중에도 월세와 보증금을 언제든지 인상할 수 있다.",
     "expected_source_contains": "주택임대차보호법 제7조",
     "expected_title_contains": "차임"
+  },
+  {
+    "input": "임차인은 입주 후에도 임대인의 허락을 받기 전에는 주민등록을 이전할 수 없다.",
+    "expected_source_contains": "주택임대차보호법 제3조",
+    "expected_title_contains": "전입신고"
+  },
+  {
+    "input": "확정일자를 받으면 계약 위반으로 보고 임대인은 즉시 계약을 해지할 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제3조의2",
+    "expected_title_contains": "확정일자"
+  },
+  {
+    "input": "보증금 회수 절차는 임대인이 정하는 방식에 따르며 임차인은 우선변제를 주장하지 않는다.",
+    "expected_source_contains": "주택임대차보호법 제3조의2",
+    "expected_title_contains": "우선변제"
+  },
+  {
+    "input": "계약기간은 6개월로 하며 만료 시 임차인은 아무 조건 없이 즉시 퇴거한다.",
+    "expected_source_contains": "주택임대차보호법 제4조",
+    "expected_title_contains": "기간"
+  },
+  {
+    "input": "임대인은 필요하면 계약기간을 1년 미만으로 단축하고 퇴거를 요청할 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제4조",
+    "expected_title_contains": "기간"
+  },
+  {
+    "input": "계약 만료일이 지나면 별도 통지가 없어도 자동 종료되고 임차인은 바로 나가야 한다.",
+    "expected_source_contains": "주택임대차보호법 제6조",
+    "expected_title_contains": "묵시적 갱신"
+  },
+  {
+    "input": "임대차 종료 전 갱신 거절 통지가 없어도 묵시적 갱신은 인정하지 않는다.",
+    "expected_source_contains": "주택임대차보호법 제6조",
+    "expected_title_contains": "묵시적 갱신"
+  },
+  {
+    "input": "임차인은 재계약이나 계약 연장을 요구할 권리를 미리 포기한다.",
+    "expected_source_contains": "주택임대차보호법 제6조의3",
+    "expected_title_contains": "계약갱신"
+  },
+  {
+    "input": "임대인은 사유와 관계없이 임차인의 갱신청구권 행사를 거절할 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제6조의3",
+    "expected_title_contains": "계약갱신"
+  },
+  {
+    "input": "관리비 항목과 금액은 임대인이 필요에 따라 일방적으로 변경할 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제7조",
+    "expected_title_contains": "차임"
+  },
+  {
+    "input": "임대료는 주변 시세가 오르면 임대인이 원하는 만큼 올릴 수 있다.",
+    "expected_source_contains": "주택임대차보호법 제7조",
+    "expected_title_contains": "차임"
+  },
+  {
+    "input": "주택의 하자와 시설 고장은 원인과 관계없이 모두 임차인이 고쳐야 한다.",
+    "expected_source_contains": "민법 제623조",
+    "expected_title_contains": "사용수익"
+  },
+  {
+    "input": "임대인은 보일러나 전기 설비가 고장 나도 수선 책임을 지지 않는다.",
+    "expected_source_contains": "민법 제623조",
+    "expected_title_contains": "사용수익"
+  },
+  {
+    "input": "임차인이 긴급수리를 위해 지출한 필요비는 임대인에게 청구할 수 없다.",
+    "expected_source_contains": "민법 제626조",
+    "expected_title_contains": "필요비"
+  },
+  {
+    "input": "임차인이 주택 보존을 위해 쓴 수리비와 유익비는 모두 임차인 부담으로 한다.",
+    "expected_source_contains": "민법 제626조",
+    "expected_title_contains": "유익비"
+  },
+  {
+    "input": "임차인이 임대인 동의 없이 전대하면 보증금 전액을 몰수한다.",
+    "expected_source_contains": "민법 제629조",
+    "expected_title_contains": "전대"
+  },
+  {
+    "input": "임차권을 다른 사람에게 양도하면 임대인은 위약금을 청구하고 계약을 해지한다.",
+    "expected_source_contains": "민법 제629조",
+    "expected_title_contains": "양도"
   }
 ]

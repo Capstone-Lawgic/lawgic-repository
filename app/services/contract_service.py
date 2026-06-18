@@ -32,7 +32,7 @@ def analyze_contract_text(
     )
 
     step_start = time.perf_counter()
-    contexts = retrieve_related_context(text, contract_type=detected_contract_type)
+    contexts = retrieve_related_context(text, contract_type=detected_contract_type, top_k=8)
     logger.info(
         "analysis timing: retrieve_related_context=%.3fs contract_type=%s context_count=%s",
         time.perf_counter() - step_start,
